@@ -52,5 +52,5 @@ class SurvModel(nn.Module):
         censored_likelihood = uncensored_likelihood * events
         cum_loss = -torch.sum(censored_likelihood)
         total_events = torch.sum(events)
-        return cum_loss
+        return cum_loss / total_events
 
