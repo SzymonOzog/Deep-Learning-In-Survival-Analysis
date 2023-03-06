@@ -22,8 +22,8 @@ class SurvModel(nn.Module):
         self.bn2 = nn.BatchNorm1d(32)
         
         self.fc3 = nn.Linear(32, 16)
-        
         self.bn3 = nn.BatchNorm1d(16)
+        
         self.fc4 = nn.Linear(16, 1)
 
     def forward(self, x):
