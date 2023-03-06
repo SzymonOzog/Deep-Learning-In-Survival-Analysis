@@ -8,7 +8,7 @@ class SurvModel(nn.Module):
     def __init__(self, data, events_col, time_col):
         super(SurvModel, self).__init__()
 
-        data = data.sort_values(by=time_col)
+        data = data.sort_values(by=time_col, ascending=False)
         self.x = data.drop([events_col, time_col], axis=1).values
         self.events = data[events_col].values
         self.time = data[time_col].values
