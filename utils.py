@@ -4,6 +4,9 @@ import torch.nn.functional as F
 import pandas as pd
 from pycox import datasets
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn_pandas import DataFrameMapper
+import matplotlib.pyplot as plt
 
 def get_unprocessed_dataset():
     df = pd.read_csv("brca_metabric/brca_metabric_clinical_data.tsv", sep="\t")
@@ -30,4 +33,43 @@ def get_deep_hit_processed_dataset():
 
 def split_dataset(df):
     train, test = train_test_split(df, test_size=0.2, random_state=42)
-    return train, test
+    return train, test    return pd.cut(time, num_bins, labels=False)
+
+#return the mask for deep hit loss
+#for uncensored mask is 1 when time is equal to the event time
+# for censored mask is 1 when time is greater than censoring time
+def create_mask(times, events):
+    times = torch.nn.functional.one_hot(torch.tensor(times))
+    mask = torch.zeros(times.shape)
+    for i in range(times.shape[0]):
+        if events[i] == 0:
+            mask[i, times[i].tolist().index(1) + 1 : ] = 0.1
+        else:
+            mask[i, times[i].tolist().index(1)] = 1
+    return mask
+
+def create_surv_df(output, dt):
+    id = [i * dt for i in range(output.shape[1])]
+    SurvFN = 1. - torch.cumsum(output, dim=1)
+    return pd.DataFrame(SurvFN.numpy(), columns=id).transpose()
+    
+def plot_history(history, title):
+    plt.figure(figsize=(10, 5))
+    plt.suptitle(title)
+    plt.subplot(1, 2, 1)
+    plt.plot(history['loss'])
+    plt.plot(history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'valid'], loc='upper left')
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(history['c_index'])
+    plt.plot(history['val_c_index'])
+    plt.title('model c-index')
+    plt.ylabel('c-index')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'valid'], loc='upper left')
+
+    plt.show()
