@@ -34,6 +34,8 @@ def get_deep_hit_processed_dataset():
 def split_dataset(df):
     train, test = train_test_split(df, test_size=0.2, random_state=42)
     return train, test    return pd.cut(time, num_bins, labels=False)
+def discretize_time(time, num_bins=10):
+    return pd.cut(time, num_bins, labels=False)
 
 #return the mask for deep hit loss
 #for uncensored mask is 1 when time is equal to the event time
