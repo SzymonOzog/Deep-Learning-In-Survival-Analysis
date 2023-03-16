@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from lifelines.utils import concordance_index
+import losses
+import utils
 
 class SurvModel(nn.Module):
     def __init__(self, data, events_col, time_col):
@@ -15,16 +16,16 @@ class SurvModel(nn.Module):
 
         self.dropout = nn.Dropout(0.1)
 
-        self.fc1 = nn.Linear(len(self.x[0]), 64)
-        self.bn1 = nn.BatchNorm1d(64)
+        self.fc1 = nn.Linear(len(self.x[0]), 90)
+        self.bn1 = nn.BatchNorm1d(90)
 
-        self.fc2 = nn.Linear(64, 32)
-        self.bn2 = nn.BatchNorm1d(32)
+        self.fc2 = nn.Linear(90, 64)
+        self.bn2 = nn.BatchNorm1d(64)
         
-        self.fc3 = nn.Linear(32, 16)
-        self.bn3 = nn.BatchNorm1d(16)
-        
-        self.fc4 = nn.Linear(16, 1)
+        self.fc3 = nn.Linear(64, 32)
+        self.bn3 = nn.BatchNorm1d(32)
+
+        self.fc4 = nn.Linear(32, 1)
 
     def forward(self, x):
         x = self.fc1(x)
@@ -44,23 +45,16 @@ class SurvModel(nn.Module):
 
     def fit(self, epochs, lr=0.001, verbose=True):
         optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
-        for epoch in range(epochs):
+        def closure():
             optimizer.zero_grad()
             output = self(torch.tensor(self.x, dtype=torch.float))
-            loss = self.negative_likelihood_loss(output, torch.tensor(self.events, dtype=torch.float))
+            loss = losses.negative_likelihood_loss(output, torch.tensor(self.events, dtype=torch.float))
             loss.backward()
-            optimizer.step()
-            if((epoch/epochs) % 0.1 == 0 and verbose):   
-                print(f"Epoch {epoch} loss: {loss.item()}, concordance index: {concordance_index(self.time, torch.exp(output.detach().squeeze()), self.events)}")
- 
-    def negative_likelihood_loss(self, y_pred, events):
-        y_pred = y_pred.squeeze()
-        hazard_ratio = torch.exp(y_pred)
-        risk = torch.cumsum(hazard_ratio, dim=0)
-        log_risk = torch.log(risk)
-        uncensored_likelihood = y_pred - log_risk
-        censored_likelihood = uncensored_likelihood * events
-        cum_loss = -torch.sum(censored_likelihood)
-        total_events = torch.sum(events)
-        return cum_loss / total_events
+            return loss
+        for epoch in range(epochs):
+            optimizer.step(closure)
+            if(verbose):
+                loss = closure()
+                print(f"Epoch {epoch} loss: {loss.item()}/{losses.negative_likelihood_loss(self(torch.tensor(self.x, dtype=torch.float)), torch.tensor(self.events, dtype=torch.float))}")
+
 
