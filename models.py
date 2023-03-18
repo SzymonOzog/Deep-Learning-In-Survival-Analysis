@@ -118,7 +118,7 @@ class DeepHitModel(SurvModelBase):
         self.fc4 = nn.Linear(32, time_bins)
     
     def prepare_data(self, data, events_col, time_col):
-        self.data = data.sort_values(by=time_col, ascending=False)
+        self.data = data
         self.continous_time = self.data[time_col].values
         self.data[time_col] = utils.discretize_time(self.data[time_col], self.time_bins)
 
