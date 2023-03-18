@@ -18,6 +18,11 @@ class SurvModelBase(nn.Module):
         self.events = data[events_col].values
         self.time = data[time_col].values
 
+    def predict(self, indices):
+        self.eval()
+        output = self(torch.tensor(self.x[indices], dtype=torch.float))
+        return output.detach()
+
     def fit(self, epochs, train_index, valid_index, lr=0.001, verbose=True):
         optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
         history = {
