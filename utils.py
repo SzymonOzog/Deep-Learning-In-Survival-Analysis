@@ -45,7 +45,8 @@ def create_mask(times, events):
     mask = torch.zeros(times.shape)
     for i in range(times.shape[0]):
         if events[i] == 0:
-            mask[i, times[i].tolist().index(1) + 1 : ] = 0.1
+            
+            mask[i, times[i].tolist().index(1) + 1 : ] = 1
         else:
             mask[i, times[i].tolist().index(1)] = 1
     return mask
