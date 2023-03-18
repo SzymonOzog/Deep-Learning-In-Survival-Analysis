@@ -11,6 +11,7 @@ class SurvModelBase(nn.Module):
     def __init__(self, data, events_col, time_col):
         super(SurvModelBase, self).__init__()
         self.prepare_data(data, events_col, time_col)
+        self.early_stopping = utils.EarlyStopping(patience=20, delta=0.001)
 
     def prepare_data(self, data, events_col, time_col):
         data = data.sort_values(by=time_col, ascending=False)
@@ -40,6 +41,12 @@ class SurvModelBase(nn.Module):
             c_index = self.concordance_index(output.detach(), train_index)
 
             valid_loss, valid_c = self.validate(valid_index)
+
+            if self.early_stopping(valid_c, self):
+                #load the last checkpoint with the best model
+                self.load_state_dict(torch.load('checkpoint.pt'))
+                break
+
             if(verbose):
                 print(f"Epoch {epoch} loss: {loss.item()}, concordance index: {c_index}\
                       valid loss: {valid_loss.item()}, valid concordance index: {valid_c}")

@@ -76,3 +76,29 @@ def plot_history(history, title):
     plt.legend(['train', 'valid'], loc='upper left')
 
     plt.show()
+
+class EarlyStopping:
+    def __init__(self, patience=10, delta=0):
+        self.patience = patience
+        self.delta = delta
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+
+    def __call__(self, score, model):
+        if self.best_score is None:
+            self.best_score = score
+            self.save_checkpoint(model, score)
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            #print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.counter >= self.patience:
+                return True
+        else:
+            self.best_score = score
+            self.save_checkpoint(model, score)
+            self.counter = 0
+        return False
+    
+    def save_checkpoint(self, model, score):
+        torch.save(model.state_dict(), f'checkpoint.pt')
