@@ -8,10 +8,32 @@ import lifelines
 from pycox.evaluation import EvalSurv
 
 class SurvModelBase(nn.Module):
-    def __init__(self, data, events_col, time_col):
+    def __init__(self, data, events_col, time_col, layers=[90, 64, 32], dropout=0.2):
         super(SurvModelBase, self).__init__()
         self.prepare_data(data, events_col, time_col)
         self.early_stopping = utils.EarlyStopping(patience=20, delta=0.001)
+        self.layers = nn.ModuleList()
+
+        for i in range(len(layers)):
+            if i == 0:
+                in_features = len(self.x[0])
+            else:
+                in_features = layers[i - 1]
+            out_features = layers[i]
+            self.layers.append(self.create_block(in_features, out_features, dropout))
+
+    def forward(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def create_block(self, in_features, out_features, dropout=0.2):
+        return nn.Sequential(
+            nn.Linear(in_features, out_features),
+            nn.Dropout(dropout),
+            nn.ReLU(),
+            nn.BatchNorm1d(out_features)
+        )
 
     def prepare_data(self, data, events_col, time_col):
         data = data.sort_values(by=time_col, ascending=False)
@@ -58,37 +80,10 @@ class SurvModelBase(nn.Module):
         return history
 
 class SurvModel(SurvModelBase):
-    def __init__(self, data, events_col, time_col):
-        super(SurvModel, self).__init__(data, events_col, time_col)
+    def __init__(self, data, events_col, time_col, layers=[90, 64, 32], dropout=0.2):
+        super(SurvModel, self).__init__(data, events_col, time_col, layers, dropout)
+        self.layers.append(nn.Linear(layers[-1], 1))
 
-        self.dropout = nn.Dropout(0.1)
-
-        self.fc1 = nn.Linear(len(self.x[0]), 90)
-        self.bn1 = nn.BatchNorm1d(90)
-
-        self.fc2 = nn.Linear(90, 64)
-        self.bn2 = nn.BatchNorm1d(64)
-        
-        self.fc3 = nn.Linear(64, 32)
-        self.bn3 = nn.BatchNorm1d(32)
-
-        self.fc4 = nn.Linear(32, 1)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.dropout(x)
-        x = F.relu(x)
-        x = self.bn1(x)
-        x = self.fc2(x)
-        x = self.dropout(x)
-        x = F.relu(x)
-        x = self.bn2(x)
-        x = self.fc3(x)
-        x = self.dropout(x)
-        x = F.relu(x)
-        x = self.bn3(x)
-        x = self.fc4(x)
-        return x
 
     def create_closure(self, train_index, optimizer):
         def closure():
@@ -107,27 +102,17 @@ class SurvModel(SurvModelBase):
         c_idx = self.concordance_index(output, valid_index)
         return loss, c_idx
     
+    
     def concordance_index(self, output, index):
         return lifelines.utils.concordance_index(self.time[index], -output.detach(), event_observed=self.events[index])
 
 class DeepHitModel(SurvModelBase):
     
-    def __init__(self, data, events_col, time_col, time_bins):
+    def __init__(self, data, events_col, time_col, time_bins, layers=[90, 64, 32], dropout=0.2):
         self.time_bins = time_bins
-        super(DeepHitModel, self).__init__(data, events_col, time_col)
-
-        self.dropout = nn.Dropout(0.1)
-
-        self.fc1 = nn.Linear(len(self.x[0]), 90)
-        self.bn1 = nn.BatchNorm1d(90)
-
-        self.fc2 = nn.Linear(90, 64)
-        self.bn2 = nn.BatchNorm1d(64)
-        
-        self.fc3 = nn.Linear(64, 32)
-        self.bn3 = nn.BatchNorm1d(32)
-
-        self.fc4 = nn.Linear(32, time_bins)
+        super(DeepHitModel, self).__init__(data, events_col, time_col, layers, dropout)
+        self.layers.append(nn.Linear(layers[-1], time_bins))
+        self.layers.append(nn.Softmax(dim=1))
     
     def prepare_data(self, data, events_col, time_col):
         self.data = data
@@ -139,22 +124,6 @@ class DeepHitModel(SurvModelBase):
         self.x = self.data.drop([events_col, time_col], axis=1).values
         self.events = data[events_col].values
         self.time = data[time_col].values
-        
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.dropout(x)
-        x = F.relu(x)
-        x = self.bn1(x)
-        x = self.fc2(x)
-        x = self.dropout(x)
-        x = F.relu(x)
-        x = self.bn2(x)
-        x = self.fc3(x)
-        x = self.dropout(x)
-        x = F.relu(x)
-        x = self.bn3(x)
-        x = self.fc4(x)
-        return F.softmax(x, dim=1)
     
     def create_closure(self, train_index, optimizer):
             def closure():
