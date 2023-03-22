@@ -48,6 +48,7 @@ class SurvModelBase(nn.Module):
 
     def fit(self, epochs, train_index, valid_index, lr=0.001, verbose=True):
         optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=1, epochs=epochs)
         history = {
             'loss': [],
             'val_loss': [],
@@ -58,6 +59,7 @@ class SurvModelBase(nn.Module):
             self.train()
             closure = self.create_closure(train_index, optimizer)
             optimizer.step(closure)
+            scheduler.step()
             loss = closure()
             output = self(torch.tensor(self.x[train_index], dtype=torch.float))
             c_index = self.concordance_index(output.detach(), train_index)
