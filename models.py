@@ -66,7 +66,7 @@ class SurvModelBase(nn.Module):
 
             valid_loss, valid_c = self.validate(valid_index)
 
-            if self.early_stopping(valid_c, self):
+            if self.early_stopping(-valid_loss, self):
                 #load the last checkpoint with the best model
                 self.load_state_dict(torch.load('checkpoint.pt'))
                 break
