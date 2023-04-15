@@ -46,9 +46,9 @@ class SurvModelBase(nn.Module):
         output = self(torch.tensor(self.x[indices], dtype=torch.float))
         return output.detach()
 
-    def fit(self, epochs, train_index, valid_index, lr=0.001, verbose=True):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
         scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=1, epochs=epochs)
+    def fit(self, epochs, train_index, valid_index, lr=0.001, verbose=True, weight_decay=0.01):
+        optimizer = torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=weight_decay)
         history = {
             'loss': [],
             'val_loss': [],
