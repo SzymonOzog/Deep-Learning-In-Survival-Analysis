@@ -51,10 +51,16 @@ def create_mask(times, events):
             mask[i, times[i].tolist().index(1)] = 1
     return mask
 
-def create_surv_df(output, dt):
-    id = [i * dt for i in range(output.shape[1])]
-    SurvFN = 1. - torch.cumsum(output, dim=1)
-    return pd.DataFrame(SurvFN.numpy(), columns=id).transpose()
+def create_surv_df(output, dt, interpolation_steps):
+    output= output.detach().numpy()
+    id = [i * dt for i in range(output.shape[1] )]
+
+    interp_id =[i * dt / interpolation_steps for i in range(output.shape[1] * interpolation_steps)]
+    interpolated_output = np.array([np.interp(interp_id, id, output[i]) for i in range(output.shape[0])])
+    
+    SurvFN = 1. - np.cumsum(interpolated_output, axis=1)
+
+    return pd.DataFrame(SurvFN, columns=interp_id).transpose()
     
 def plot_history(history, title):
     plt.figure(figsize=(10, 5))

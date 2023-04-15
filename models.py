@@ -110,9 +110,12 @@ class SurvModel(SurvModelBase):
 
 class DeepHitModel(SurvModelBase):
     
-    def __init__(self, data, events_col, time_col, time_bins, layers=[90, 64, 32], dropout=0.2):
+    def __init__(self, data, events_col, time_col, time_bins, interpolation_steps = 10, layers=[90, 64, 32], dropout=0.2):
         self.time_bins = time_bins
+        self.interpolation_steps = interpolation_steps
+
         super(DeepHitModel, self).__init__(data, events_col, time_col, layers, dropout)
+        
         self.layers.append(nn.Linear(layers[-1], time_bins))
         self.layers.append(nn.Softmax(dim=1))
     
@@ -148,6 +151,6 @@ class DeepHitModel(SurvModelBase):
         return loss, c_idx
     
     def concordance_index(self, outputs, indices):
-        surv = utils.create_surv_df(outputs.detach(), self.continous_time.max()/outputs.shape[1])
+        surv = utils.create_surv_df(outputs.detach(), self.continous_time.max()/outputs.shape[1], self.interpolation_steps)
         ev = EvalSurv(surv, self.continous_time[indices], self.events[indices], censor_surv='km')
         return ev.concordance_td('antolini')
