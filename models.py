@@ -14,7 +14,7 @@ class SurvModelBase(nn.Module):
         super(SurvModelBase, self).__init__()
         self.residual = residual
         self.prepare_data(data, events_col, time_col)
-        self.early_stopping = utils.EarlyStopping(patience=20, delta=0.001)
+        self.early_stopping = utils.EarlyStopping(patience=100, delta=0.001)
         self.layers = nn.ModuleList()
 
 
