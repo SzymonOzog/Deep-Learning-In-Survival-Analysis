@@ -6,12 +6,15 @@ import torch.nn.functional as F
 import numpy as np
 import losses
 import utils
+import math
 import lifelines
 from pycox.evaluation import EvalSurv
+from datasets import *
 
 class SurvModelBase(nn.Module):
-    def __init__(self, data, events_col, time_col, layers=[90, 64, 32], dropout=0.2, residual=False):
+    def __init__(self, data, events_col, time_col, batch_size=64, layers=[90, 64, 32], dropout=0.2, residual=False):
         super(SurvModelBase, self).__init__()
+        self.batch_size = batch_size
         self.residual = residual
         self.prepare_data(data, events_col, time_col)
         self.early_stopping = utils.EarlyStopping(patience=100, delta=0.001)
@@ -46,6 +49,8 @@ class SurvModelBase(nn.Module):
         )
 
     def prepare_data(self, data, events_col, time_col):
+        for col in data.columns:
+            data[col] = data[col].astype(float)
         data = data.sort_values(by=time_col, ascending=False)
         self.x = data.drop([events_col, time_col], axis=1).values
         self.events = data[events_col].values
@@ -65,16 +70,18 @@ class SurvModelBase(nn.Module):
             'c_index': [],
             'val_c_index': []
         }
+        train_dataloader, valid_dataloader = self.create_data_loaders(train_index, valid_index)
         for epoch in range(epochs):
-            self.train()
-            closure = self.create_closure(train_index, optimizer)
-            optimizer.step(closure)
-            scheduler.step()
-            loss = closure()
-            output = self(torch.tensor(self.x[train_index], dtype=torch.float))
-            c_index = self.concordance_index(output.detach(), train_index)
+            for batch in train_dataloader:
+                # convert batch to float
+                batch = [item.float() for item in batch]
+                self.train()
+                closure = self.create_closure(batch, optimizer)
+                optimizer.step(closure)
+                scheduler.step()
 
-            valid_loss, valid_c = self.validate(valid_index)
+            loss, c_index = self.validate(train_dataloader)
+            valid_loss, valid_c = self.validate(valid_dataloader)
 
             if self.early_stopping(-valid_loss, self):
                 #load the last checkpoint with the best model
@@ -93,42 +100,70 @@ class SurvModelBase(nn.Module):
         return history
 
 class SurvModel(SurvModelBase):
-    def __init__(self, data, events_col, time_col, layers=[90, 64, 32], dropout=0.2, residual=False):
-        super(SurvModel, self).__init__(data, events_col, time_col, layers, dropout, residual)
+    def __init__(self, data, events_col, time_col, batch_size=64, layers=[90, 64, 32], dropout=0.2, residual=False):
+        super(SurvModel, self).__init__(data, events_col, time_col, batch_size, layers, dropout, residual)
         if residual and len(layers) % 2 == 0:
             self.layers.append(nn.Linear(layers[-1] + layers[-3], 1))
         else:
             self.layers.append(nn.Linear(layers[-1], 1))
 
+    def create_data_loaders(self, train_index, valid_index):
+        train_dataset = SurvDataset(self.x[train_index], self.events[train_index], self.time[train_index])
+        valid_dataset = SurvDataset(self.x[valid_index], self.events[valid_index], self.time[valid_index])
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False)
+        return train_dataloader, valid_dataloader
 
-    def create_closure(self, train_index, optimizer):
+
+    def create_closure(self, batch, optimizer):
+        # sort batch by time descending
+        index = torch.argsort(batch[2], descending=True)
+        batch = [item[index] for item in batch]
         def closure():
             optimizer.zero_grad()
-            output = self(torch.tensor(self.x[train_index], dtype=torch.float))
-            loss = losses.negative_likelihood_loss(output, torch.tensor(self.events[train_index], dtype=torch.float))
+            output = self(batch[0])
+            loss = losses.negative_likelihood_loss(output, batch[1])
             loss.backward()
             return loss
         return closure
     
-    def validate(self, valid_index):
+    def validate(self, dataloader):
+        full_output = []
+        full_batch = [[], [], []]
         self.eval()
-        output = self(torch.tensor(self.x[valid_index], dtype=torch.float))
+        for batch in dataloader:
+            # convert batch to float
+            batch = [item.float() for item in batch]
+            output = self(batch[0])
+            full_output.append(output.detach())
+            for i in range(len(batch)):
+                full_batch[i].append(batch[i])            
 
-        loss = losses.negative_likelihood_loss(output, torch.tensor(self.events[valid_index], dtype=torch.float))
-        c_idx = self.concordance_index(output, valid_index)
+        full_output = torch.cat(full_output)
+        for i in range(len(full_batch)):
+            full_batch[i] = torch.cat(full_batch[i])
+        
+        # sort output and batch by time descending
+        indices = torch.argsort(full_batch[2], descending=True)
+        full_output = full_output[indices]
+        for i in range(len(full_batch)):
+            full_batch[i] = full_batch[i][indices]
+
+        loss = losses.negative_likelihood_loss(full_output, full_batch[1])
+        c_idx = self.concordance_index(full_output, full_batch)
         return loss, c_idx
     
     
-    def concordance_index(self, output, index):
-        return lifelines.utils.concordance_index(self.time[index], -output.detach(), event_observed=self.events[index])
+    def concordance_index(self, output, batch):
+        return lifelines.utils.concordance_index(batch[2], -output.detach(), event_observed=batch[1])
 
 class DeepHitModel(SurvModelBase):
     
-    def __init__(self, data, events_col, time_col, time_bins, interpolation_steps = 10, layers=[90, 64, 32], dropout=0.2, residual=False):
+    def __init__(self, data, events_col, time_col, time_bins, batch_size=64, interpolation_steps = 10, layers=[90, 64, 32], dropout=0.2, residual=False):
         self.time_bins = time_bins
         self.interpolation_steps = interpolation_steps
 
-        super(DeepHitModel, self).__init__(data, events_col, time_col, layers, dropout, residual)
+        super(DeepHitModel, self).__init__(data, events_col, time_col, batch_size, layers, dropout, residual)
         
         if residual and len(layers) % 2 == 0:
             final_layer = nn.Linear(layers[-1] + layers[-3], time_bins)
@@ -142,6 +177,9 @@ class DeepHitModel(SurvModelBase):
     
     def prepare_data(self, data, events_col, time_col):
         self.data = data
+        #convert data to float
+        for col in self.data.columns:
+            self.data[col] = self.data[col].astype(float)
         self.continous_time = self.data[time_col].values
         self.data[time_col] = utils.discretize_time(self.data[time_col], self.time_bins)
 
@@ -150,28 +188,43 @@ class DeepHitModel(SurvModelBase):
         self.x = self.data.drop([events_col, time_col], axis=1).values
         self.events = data[events_col].values
         self.time = data[time_col].values
+
+    def create_data_loaders(self, train_index, valid_index):
+        train_dataset = HitDataset(self.x[train_index], self.events[train_index], self.time[train_index], self.continous_time[train_index], self.mask[train_index])
+        valid_dataset = HitDataset(self.x[valid_index], self.events[valid_index], self.time[valid_index], self.continous_time[valid_index], self.mask[valid_index])
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False)
+        return train_dataloader, valid_dataloader
     
-    def create_closure(self, train_index, optimizer):
+    def create_closure(self, batch, optimizer):
             def closure():
                 optimizer.zero_grad()
-                output = self(torch.tensor(self.x[train_index], dtype=torch.float))
-                loss = losses.deep_hit_loss(output, self.mask[train_index])
+                output = self(batch[0])
+                loss = losses.deep_hit_loss(output, batch[4])
                 loss.backward()
                 return loss
             return closure
         
-    def validate(self, valid_index):
-        data = self.x[valid_index]
-        mask = self.mask[valid_index]
-
+    def validate(self, dataloader):
+        full_output = []
+        full_batch = [[], [], [], [], []]
         self.eval()
-        output = self(torch.tensor(data, dtype=torch.float))
+        for batch in dataloader:
+            batch = [item.float() for item in batch]
+            output = self(batch[0])
+            full_output.append(output.detach())
+            for i in range(len(batch)):
+                full_batch[i].append(batch[i])    
 
-        loss = losses.deep_hit_loss(output, mask)
-        c_idx = self.concordance_index(output, valid_index)
+        full_output = torch.cat(full_output) 
+        for i in range(len(full_batch)):
+            full_batch[i] = torch.cat(full_batch[i])       
+
+        loss = losses.deep_hit_loss(full_output, full_batch[4])
+        c_idx = self.concordance_index(full_output, full_batch)
         return loss, c_idx
     
-    def concordance_index(self, outputs, indices):
+    def concordance_index(self, outputs, batch):
         surv = utils.create_surv_df(outputs.detach(), self.continous_time.max()/outputs.shape[1], self.interpolation_steps)
-        ev = EvalSurv(surv, self.continous_time[indices], self.events[indices], censor_surv='km')
+        ev = EvalSurv(surv, batch[3].detach().numpy(), batch[1].detach().numpy(), censor_surv='km')
         return ev.concordance_td('antolini')
