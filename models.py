@@ -131,10 +131,14 @@ class DeepHitModel(SurvModelBase):
         super(DeepHitModel, self).__init__(data, events_col, time_col, layers, dropout, residual)
         
         if residual and len(layers) % 2 == 0:
-            self.layers.append(nn.Linear(layers[-1] + layers[-3], time_bins))
+            final_layer = nn.Linear(layers[-1] + layers[-3], time_bins)
         else:
-            self.layers.append(nn.Linear(layers[-1], time_bins))
-        self.layers.append(nn.Softmax(dim=1))
+            final_layer = nn.Linear(layers[-1], time_bins)
+
+        self.layers.append(nn.Sequential(
+            final_layer,
+            nn.Softmax(dim=1))
+            )
     
     def prepare_data(self, data, events_col, time_col):
         self.data = data
