@@ -6,6 +6,7 @@ from pycox import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
+import numpy as np
 
 def get_unprocessed_dataset():
     df = pd.read_csv("brca_metabric/brca_metabric_clinical_data.tsv", sep="\t")
