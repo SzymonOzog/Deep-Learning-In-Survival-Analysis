@@ -14,6 +14,9 @@ from datasets import *
 class SurvModelBase(nn.Module):
     def __init__(self, data, events_col, time_col, batch_size=64, layers=[90, 64, 32], dropout=0.2, residual=False):
         super(SurvModelBase, self).__init__()
+
+        residual = residual and len(layers) > 2
+
         self.batch_size = batch_size
         self.residual = residual
         self.prepare_data(data, events_col, time_col)
@@ -103,7 +106,7 @@ class SurvModelBase(nn.Module):
 class SurvModel(SurvModelBase):
     def __init__(self, data, events_col, time_col, batch_size=64, layers=[90, 64, 32], dropout=0.2, residual=False):
         super(SurvModel, self).__init__(data, events_col, time_col, batch_size, layers, dropout, residual)
-        if residual and len(layers) % 2 == 0:
+        if self.residual and len(layers) % 2 == 0:
             self.layers.append(nn.Linear(layers[-1] + layers[-3], 1))
         else:
             self.layers.append(nn.Linear(layers[-1], 1))
@@ -166,7 +169,7 @@ class DeepHitModel(SurvModelBase):
 
         super(DeepHitModel, self).__init__(data, events_col, time_col, batch_size, layers, dropout, residual)
         
-        if residual and len(layers) % 2 == 0:
+        if self.residual and len(layers) % 2 == 0:
             final_layer = nn.Linear(layers[-1] + layers[-3], time_bins)
         else:
             final_layer = nn.Linear(layers[-1], time_bins)
