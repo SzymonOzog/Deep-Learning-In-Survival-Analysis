@@ -18,10 +18,10 @@ def get_processed_dataset():
     df_clear = df.dropna()
     df_clear = df_clear.drop(["Study ID", "Patient ID", "Sample ID","Overall Survival Status", "Patient's Vital Status", "Cancer Type", "Number of Samples Per Patient", "Sex", "Sample Type"
     , "Cancer Type Detailed", "Tumor Other Histologic Subtype", "Oncotree Code", "Relapse Free Status", "Relapse Free Status (Months)", "TMB (nonsynonymous)"], axis = 1)
-    df_clear = df_clear.drop(["Type of Breast Surgery", "Cellularity", "HER2 Status", "Integrative Cluster", "HER2 status measured by SNP6", "Pam50 + Claudin-low subtype", "3-Gene classifier subtype", "ER Status"], axis = 1)
+    #df_clear = df_clear.drop(["Type of Breast Surgery", "Cellularity", "HER2 Status", "Integrative Cluster", "HER2 status measured by SNP6", "Pam50 + Claudin-low subtype", "3-Gene classifier subtype", "ER Status"], axis = 1)
     # replace Pam50 + Claudin-low subtype == NC with aNC , "Pam50 + Claudin-low subtype"
-    #df_clear["HER2 status measured by SNP6"] = df_clear["HER2 status measured by SNP6"].replace("UNDEF", "AUNDEF")
-    #df_clear["Pam50 + Claudin-low subtype"] = df_clear["Pam50 + Claudin-low subtype"].replace("NC", "ANC")
+    df_clear["HER2 status measured by SNP6"] = df_clear["HER2 status measured by SNP6"].replace("UNDEF", "AUNDEF")
+    df_clear["Pam50 + Claudin-low subtype"] = df_clear["Pam50 + Claudin-low subtype"].replace("NC", "ANC")
     df_clear = pd.get_dummies(df_clear, drop_first=True)
     return df_clear, "Censorship", "Overall Survival (Months)"
 
