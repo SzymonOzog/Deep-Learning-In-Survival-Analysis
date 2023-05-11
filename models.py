@@ -80,8 +80,10 @@ class SurvModelBase(nn.Module):
                 # convert batch to float
                 batch = [item.float() for item in batch]
                 self.train()
-                closure = self.create_closure(batch, optimizer)
-                optimizer.step(closure)
+                optimizer.zero_grad()
+                loss = self.get_loss(batch)
+                loss.backward()
+                optimizer.step()
                 scheduler.step()
 
             loss, c_index = self.validate(train_dataloader)
@@ -119,17 +121,12 @@ class SurvModel(SurvModelBase):
         return train_dataloader, valid_dataloader
 
 
-    def create_closure(self, batch, optimizer):
+    def get_loss(self, batch):
         # sort batch by time descending
         index = torch.argsort(batch[2], descending=True)
         batch = [item[index] for item in batch]
-        def closure():
-            optimizer.zero_grad()
-            output = self(batch[0])
-            loss = losses.negative_likelihood_loss(output, batch[1])
-            loss.backward()
-            return loss
-        return closure
+        output = self(batch[0])
+        return losses.negative_likelihood_loss(output, batch[1])
     
     def validate(self, dataloader):
         full_output = []
@@ -200,14 +197,9 @@ class DeepHitModel(SurvModelBase):
         valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False)
         return train_dataloader, valid_dataloader
     
-    def create_closure(self, batch, optimizer):
-            def closure():
-                optimizer.zero_grad()
-                output = self(batch[0])
-                loss = losses.deep_hit_loss(output, batch[4])
-                loss.backward()
-                return loss
-            return closure
+    def get_loss(self, batch):
+            output = self(batch[0])
+            return losses.deep_hit_loss(output, batch[4])
         
     def validate(self, dataloader):
         full_output = []
