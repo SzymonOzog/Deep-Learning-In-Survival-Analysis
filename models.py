@@ -116,7 +116,7 @@ class SurvModel(SurvModelBase):
     def create_data_loaders(self, train_index, valid_index):
         train_dataset = SurvDataset(self.x[train_index], self.events[train_index], self.time[train_index])
         valid_dataset = SurvDataset(self.x[valid_index], self.events[valid_index], self.time[valid_index])
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True)
         valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False)
         return train_dataloader, valid_dataloader
 
@@ -193,7 +193,7 @@ class DeepHitModel(SurvModelBase):
     def create_data_loaders(self, train_index, valid_index):
         train_dataset = HitDataset(self.x[train_index], self.events[train_index], self.time[train_index], self.continous_time[train_index], self.mask[train_index])
         valid_dataset = HitDataset(self.x[valid_index], self.events[valid_index], self.time[valid_index], self.continous_time[valid_index], self.mask[valid_index])
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True)
         valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=False)
         return train_dataloader, valid_dataloader
     
