@@ -83,6 +83,7 @@ class SurvModelBase(nn.Module):
                 optimizer.zero_grad()
                 loss = self.get_loss(batch)
                 loss.backward()
+                nn.utils.clip_grad_norm_(self.parameters(), 0.1)
                 optimizer.step()
                 scheduler.step()
 
