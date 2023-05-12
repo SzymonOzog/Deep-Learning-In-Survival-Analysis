@@ -64,7 +64,7 @@ class SurvModelBase(nn.Module):
         output = self(torch.tensor(self.x[indices], dtype=torch.float))
         return output.detach()
 
-    def fit(self, epochs, train_index, valid_index, lr=0.001, verbose=True, weight_decay=0.01):
+    def fit(self, epochs, train_index, valid_index, lr=0.001, verbose=True, track_history = True, weight_decay=0.01):
         optimizer = torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=weight_decay)
         history = {
             'loss': [],
@@ -99,11 +99,11 @@ class SurvModelBase(nn.Module):
                 print(f"Epoch {epoch} loss: {loss.item()}, concordance index: {c_index}\
                       valid loss: {valid_loss.item()}, valid concordance index: {valid_c}\
                       learning rate: {scheduler.get_last_lr()}")
-                
-            history['loss'].append(loss.item())
-            history['val_loss'].append(valid_loss.item())
-            history['c_index'].append(c_index)
-            history['val_c_index'].append(valid_c)
+            if track_history:    
+                history['loss'].append(loss.item())
+                history['val_loss'].append(valid_loss.item())
+                history['c_index'].append(c_index)
+                history['val_c_index'].append(valid_c)
         return history
 
 class SurvModel(SurvModelBase):
