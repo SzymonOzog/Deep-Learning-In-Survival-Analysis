@@ -74,8 +74,9 @@ class SurvModelBase(nn.Module):
             'lr': []
         }
         train_dataloader, valid_dataloader = self.create_data_loaders(train_index, valid_index)
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, 
-                                                        steps_per_epoch=math.ceil(len(train_index)/self.batch_size), epochs=epochs)
+        # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, 
+        #                                                 steps_per_epoch=math.ceil(len(train_index)/self.batch_size), epochs=epochs)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5, verbose=False)
         for epoch in range(epochs):
             for batch in train_dataloader:
                 # convert batch to float
@@ -86,10 +87,10 @@ class SurvModelBase(nn.Module):
                 loss.backward()
                 nn.utils.clip_grad_norm_(self.parameters(), 0.1)
                 optimizer.step()
-                scheduler.step()
 
             loss, c_index = self.validate(train_dataloader)
             valid_loss, valid_c = self.validate(valid_dataloader)
+            scheduler.step(valid_loss)
 
             if self.early_stopping(-valid_loss, self):
                 #load the last checkpoint with the best model
