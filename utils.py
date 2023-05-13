@@ -7,6 +7,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
+import sksurv
+import sksurv.datasets
 
 def get_unprocessed_dataset():
     df = pd.read_csv("brca_metabric/brca_metabric_clinical_data.tsv", sep="\t")
@@ -30,6 +32,12 @@ def get_deep_surv_processed_dataset():
 
 def get_deep_hit_processed_dataset():
     return pd.read_csv("METABRIC_DeepHit/features.csv").join(pd.read_csv("METABRIC_DeepHit/labels.csv")), "event_time", "label"
+
+def get_flchain():
+    df, y = sksurv.datasets.load_flchain()
+    df = df.join(pd.DataFrame(y))
+    df = df.dropna()
+    return pd.get_dummies(df, drop_first=True), "death", "futime"
 
 def split_dataset(df):
     train, test = train_test_split(df, test_size=0.2, random_state=42)
