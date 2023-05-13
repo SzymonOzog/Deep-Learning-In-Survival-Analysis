@@ -222,6 +222,6 @@ class DeepHitModel(SurvModelBase):
         return loss, c_idx
     
     def concordance_index(self, outputs, batch):
-        surv = utils.create_surv_df(outputs.detach(), self.continous_time.max()/outputs.shape[1], self.interpolation_steps)
+        surv = utils.create_surv_df(outputs, self.continous_time.max()/outputs.shape[1], self.interpolation_steps)
         ev = EvalSurv(surv, batch[3].detach().numpy(), batch[1].detach().numpy(), censor_surv='km')
         return ev.concordance_td('antolini')
