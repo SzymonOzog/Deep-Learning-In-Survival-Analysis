@@ -70,7 +70,8 @@ class SurvModelBase(nn.Module):
             'loss': [],
             'val_loss': [],
             'c_index': [],
-            'val_c_index': []
+            'val_c_index': [],
+            'lr': []
         }
         train_dataloader, valid_dataloader = self.create_data_loaders(train_index, valid_index)
         scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, 
@@ -104,6 +105,7 @@ class SurvModelBase(nn.Module):
                 history['val_loss'].append(valid_loss.item())
                 history['c_index'].append(c_index)
                 history['val_c_index'].append(valid_c)
+                history['lr'].append(optimizer.param_groups[0]['lr'])
         return history
 
 class SurvModel(SurvModelBase):

@@ -66,7 +66,7 @@ def create_surv_df(output, dt, interpolation_steps):
 def plot_history(history, title):
     plt.figure(figsize=(10, 5))
     plt.suptitle(title)
-    plt.subplot(1, 2, 1)
+    plt.subplot(1, 3, 1)
     plt.plot(history['loss'])
     plt.plot(history['val_loss'])
     plt.title('model loss')
@@ -74,7 +74,7 @@ def plot_history(history, title):
     plt.xlabel('epoch')
     plt.legend(['train', 'valid'], loc='upper left')
     
-    plt.subplot(1, 2, 2)
+    plt.subplot(1, 3, 2)
     plt.plot(history['c_index'])
     plt.plot(history['val_c_index'])
     plt.title('model c-index')
@@ -82,6 +82,11 @@ def plot_history(history, title):
     plt.xlabel('epoch')
     plt.legend(['train', 'valid'], loc='upper left')
 
+    plt.subplot(1, 3, 3)
+    plt.plot(history['lr'])
+    plt.title('model learning rate')
+    plt.ylabel('lr')
+    plt.xlabel('epoch')
     plt.show()
 
 class EarlyStopping:
