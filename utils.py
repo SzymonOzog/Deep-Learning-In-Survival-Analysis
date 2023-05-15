@@ -14,10 +14,10 @@ def get_unprocessed_dataset():
     df = pd.read_csv("brca_metabric/brca_metabric_clinical_data.tsv", sep="\t")
     return df, None, "Overall Survival (Months)"
 
-def get_processed_dataset():
+def get_processed_dataset(missing_values_strategy="mean"):
     df = get_unprocessed_dataset()[0]
     df["Censorship"] = df["Patient's Vital Status"] == "Living"
-    df_clear = df.dropna()
+    df_clear = handle_missing_values(df, missing_values_strategy)
     df_clear = df_clear.drop(["Study ID", "Patient ID", "Sample ID","Overall Survival Status", "Patient's Vital Status", "Cancer Type", "Number of Samples Per Patient", "Sex", "Sample Type"
     , "Cancer Type Detailed", "Tumor Other Histologic Subtype", "Oncotree Code", "Relapse Free Status", "Relapse Free Status (Months)", "TMB (nonsynonymous)"], axis = 1)
     #df_clear = df_clear.drop(["Type of Breast Surgery", "Cellularity", "HER2 Status", "Integrative Cluster", "HER2 status measured by SNP6", "Pam50 + Claudin-low subtype", "3-Gene classifier subtype", "ER Status"], axis = 1)
@@ -33,11 +33,23 @@ def get_deep_surv_processed_dataset():
 def get_deep_hit_processed_dataset():
     return pd.read_csv("METABRIC_DeepHit/features.csv").join(pd.read_csv("METABRIC_DeepHit/labels.csv")), "event_time", "label"
 
-def get_flchain():
+def get_flchain(missing_values_strategy="mean"):
     df, y = sksurv.datasets.load_flchain()
     df = df.join(pd.DataFrame(y))
-    df = df.dropna()
+    df = handle_missing_values(df, missing_values_strategy)
+    df = df.drop(["chapter"], axis = 1)
     return pd.get_dummies(df, drop_first=True), "death", "futime"
+
+def handle_missing_values(df, strategy="mean"):
+    if strategy == "mean":
+        return df.fillna(df.mean())
+    elif strategy == "median":
+        return df.fillna(df.median())
+    elif strategy == "mode":
+        return df.fillna(df.mode())
+    elif strategy == "drop":
+        return df.dropna()
+    return df
 
 def split_dataset(df):
     train, test = train_test_split(df, test_size=0.2, random_state=42)
