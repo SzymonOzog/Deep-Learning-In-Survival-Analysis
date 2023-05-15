@@ -150,3 +150,30 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
+brca_metabric/Readme.txt
+brca_metabric/meta_study.txt
+brca_metabric/meta_mutations.txt
+brca_metabric/meta_mrna_illumina_microarray_zscores_ref_diploid_samples.txt
+brca_metabric/meta_mrna_illumina_microarray.txt
+brca_metabric/meta_methylation_promoters_rrbs.txt
+brca_metabric/meta_gene_panel_matrix.txt
+brca_metabric/meta_cna.txt
+brca_metabric/meta_clinical_sample.txt
+brca_metabric/meta_clinical_patient.txt
+brca_metabric/LICENSE
+brca_metabric/data_mutations.txt
+brca_metabric/data_mrna_illumina_microarray_zscores_ref_diploid_samples.txt
+brca_metabric/data_mrna_illumina_microarray.txt
+brca_metabric/data_methylation_promoters_rrbs.txt
+brca_metabric/data_gene_panel_matrix.txt
+brca_metabric/data_cna.txt
+brca_metabric/data_clinical_sample.txt
+brca_metabric/data_clinical_patient.txt
+brca_metabric/case_lists/cases_sequenced.txt
+brca_metabric/case_lists/cases_nature_2012.txt
+brca_metabric/case_lists/cases_nat_comm_2016.txt
+brca_metabric/case_lists/cases_mRNA.txt
+brca_metabric/case_lists/cases_complete.txt
+brca_metabric/case_lists/cases_cnaseq.txt
+brca_metabric/case_lists/cases_cna.txt
+brca_metabric/case_lists/cases_all.txt
