@@ -84,8 +84,10 @@ def create_surv_df(output, dt, interpolation_steps):
     return pd.DataFrame(SurvFN, columns=interp_id).transpose()
     
 def plot_history(history, title):
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(18, 5))
     plt.suptitle(title)
+    plt.tight_layout()
+
     plt.subplot(1, 3, 1)
     plt.plot(history['loss'])
     plt.plot(history['val_loss'])
