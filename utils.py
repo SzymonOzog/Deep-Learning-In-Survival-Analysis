@@ -55,6 +55,15 @@ def get_gbsg2(missing_values_strategy="mean"):
     df = pd.get_dummies(df, drop_first=True)
     return df, "cens", "time"
 
+def get_whas500(missing_values_strategy="mean"):
+    df, y = sksurv.datasets.load_whas500()
+    df = df.join(pd.DataFrame(y))
+    df = handle_missing_values(df, missing_values_strategy)
+    df = pd.get_dummies(df, drop_first=True)
+    return df, "fstat", "lenfol"
+
+
+
 def handle_missing_values(df, strategy="mean"):
     if strategy == "mean":
         return df.fillna(df.mean())
