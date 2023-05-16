@@ -76,7 +76,7 @@ class SurvModelBase(nn.Module):
         train_dataloader, valid_dataloader = self.create_data_loaders(train_index, valid_index)
         # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, 
         #                                                 steps_per_epoch=math.ceil(len(train_index)/self.batch_size), epochs=epochs)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5, verbose=False)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.5, verbose=False)
         for epoch in range(epochs):
             for batch in train_dataloader:
                 # convert batch to float
