@@ -40,6 +40,14 @@ def get_flchain(missing_values_strategy="mean"):
     df = df.drop(["chapter"], axis = 1)
     return pd.get_dummies(df, drop_first=True), "death", "futime"
 
+def get_aids(missing_values_strategy="mean"):
+    df, y = sksurv.datasets.load_aids()
+    df = df.join(pd.DataFrame(y))
+    df = handle_missing_values(df, missing_values_strategy)
+    df = pd.get_dummies(df, drop_first=True)
+    df = df.drop(["txgrp_3","txgrp_4"], axis = 1)
+    return df, "censor", "time"
+
 def handle_missing_values(df, strategy="mean"):
     if strategy == "mean":
         return df.fillna(df.mean())
