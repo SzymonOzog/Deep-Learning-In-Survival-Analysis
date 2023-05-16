@@ -62,7 +62,12 @@ def get_whas500(missing_values_strategy="mean"):
     df = pd.get_dummies(df, drop_first=True)
     return df, "fstat", "lenfol"
 
-
+def get_veterans_lugn_cancer(missing_values_strategy="mean"):
+    df, y = sksurv.datasets.load_veterans_lung_cancer()
+    df = df.join(pd.DataFrame(y))
+    df = handle_missing_values(df, missing_values_strategy)
+    df = pd.get_dummies(df, drop_first=True)
+    return df, "Status", "Survival_in_days"
 
 def handle_missing_values(df, strategy="mean"):
     if strategy == "mean":
