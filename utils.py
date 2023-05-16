@@ -48,6 +48,13 @@ def get_aids(missing_values_strategy="mean"):
     df = df.drop(["txgrp_3","txgrp_4"], axis = 1)
     return df, "censor", "time"
 
+def get_gbsg2(missing_values_strategy="mean"):
+    df, y = sksurv.datasets.load_gbsg2()
+    df = df.join(pd.DataFrame(y))
+    df = handle_missing_values(df, missing_values_strategy)
+    df = pd.get_dummies(df, drop_first=True)
+    return df, "cens", "time"
+
 def handle_missing_values(df, strategy="mean"):
     if strategy == "mean":
         return df.fillna(df.mean())
