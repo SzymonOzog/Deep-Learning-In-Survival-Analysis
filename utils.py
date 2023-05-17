@@ -10,12 +10,12 @@ import numpy as np
 import sksurv
 import sksurv.datasets
 
-def get_unprocessed_dataset():
+def get_unprocessed_metabric():
     df = pd.read_csv("brca_metabric/brca_metabric_clinical_data.tsv", sep="\t")
     return df, None, "Overall Survival (Months)"
 
 def get_metabric(missing_values_strategy="mean"):
-    df = get_unprocessed_dataset()[0]
+    df = get_unprocessed_metabric()[0]
     df["Censorship"] = df["Patient's Vital Status"] == "Living"
     df_clear = handle_missing_values(df, missing_values_strategy)
     df_clear = df_clear.drop(["Study ID", "Patient ID", "Sample ID","Overall Survival Status", "Patient's Vital Status", "Cancer Type", "Number of Samples Per Patient", "Sex", "Sample Type"
