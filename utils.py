@@ -27,12 +27,6 @@ def get_metabric(missing_values_strategy="mean"):
     df_clear = pd.get_dummies(df_clear, drop_first=True)
     return df_clear, "Censorship", "Overall Survival (Months)"
 
-def get_deep_surv_processed_dataset():
-    return datasets.metabric.read_df(), "event", "duration"
-
-def get_deep_hit_processed_dataset():
-    return pd.read_csv("METABRIC_DeepHit/features.csv").join(pd.read_csv("METABRIC_DeepHit/labels.csv")), "event_time", "label"
-
 def get_flchain(missing_values_strategy="mean"):
     df, y = sksurv.datasets.load_flchain()
     df = df.join(pd.DataFrame(y))
