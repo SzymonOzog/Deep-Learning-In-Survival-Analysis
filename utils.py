@@ -14,7 +14,7 @@ def get_unprocessed_dataset():
     df = pd.read_csv("brca_metabric/brca_metabric_clinical_data.tsv", sep="\t")
     return df, None, "Overall Survival (Months)"
 
-def get_processed_dataset(missing_values_strategy="mean"):
+def get_metabric(missing_values_strategy="mean"):
     df = get_unprocessed_dataset()[0]
     df["Censorship"] = df["Patient's Vital Status"] == "Living"
     df_clear = handle_missing_values(df, missing_values_strategy)
