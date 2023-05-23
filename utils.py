@@ -61,6 +61,7 @@ def get_veterans_lugn_cancer(missing_values_strategy="mean"):
     df = df.join(pd.DataFrame(y))
     df = handle_missing_values(df, missing_values_strategy)
     df = pd.get_dummies(df, drop_first=True)
+    df["Status"] = np.logical_not(df["Status"])
     return df, "Status", "Survival_in_days"
 
 def handle_missing_values(df, strategy="mean"):
