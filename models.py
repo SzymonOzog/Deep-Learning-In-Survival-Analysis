@@ -47,8 +47,8 @@ class SurvModelBase(nn.Module):
         return nn.Sequential(
             nn.Linear(in_features, out_features),
             nn.Dropout(dropout),
-            nn.ReLU(),
-            nn.BatchNorm1d(out_features)
+            nn.BatchNorm1d(out_features),
+            nn.ReLU()
         )
 
     def prepare_data(self, data, events_col, time_col):
