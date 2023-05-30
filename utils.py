@@ -11,12 +11,12 @@ import sksurv
 import sksurv.datasets
 
 def get_unprocessed_metabric():
-    df = pd.read_csv("brca_metabric/brca_metabric_clinical_data.tsv", sep="\t")
+    df = pd.read_csv("G:/DL/Deep-Learning-In-Survival-Analysis/brca_metabric/brca_metabric_clinical_data.tsv", sep="\t")
     return df, None, "Overall Survival (Months)"
 
 def get_metabric(missing_values_strategy="mean"):
     df = get_unprocessed_metabric()[0]
-    df["Censorship"] = df["Patient's Vital Status"] == "Living"
+    df["Event"] = df["Patient's Vital Status"] != "Living"
     df_clear = handle_missing_values(df, missing_values_strategy)
     df_clear = df_clear.drop(["Study ID", "Patient ID", "Sample ID","Overall Survival Status", "Patient's Vital Status", "Cancer Type", "Number of Samples Per Patient", "Sex", "Sample Type"
     , "Cancer Type Detailed", "Tumor Other Histologic Subtype", "Oncotree Code", "Relapse Free Status", "Relapse Free Status (Months)", "TMB (nonsynonymous)"], axis = 1)
@@ -25,13 +25,14 @@ def get_metabric(missing_values_strategy="mean"):
     df_clear["HER2 status measured by SNP6"] = df_clear["HER2 status measured by SNP6"].replace("UNDEF", "AUNDEF")
     df_clear["Pam50 + Claudin-low subtype"] = df_clear["Pam50 + Claudin-low subtype"].replace("NC", "ANC")
     df_clear = pd.get_dummies(df_clear, drop_first=True)
-    return df_clear, "Censorship", "Overall Survival (Months)"
+    return df_clear, "Event", "Overall Survival (Months)"
 
 def get_flchain(missing_values_strategy="mean"):
     df, y = sksurv.datasets.load_flchain()
     df = df.join(pd.DataFrame(y))
     df = handle_missing_values(df, missing_values_strategy)
     df = df.drop(["chapter"], axis = 1)
+    df["death"] = np.logical_not(df["death"])
     return pd.get_dummies(df, drop_first=True), "death", "futime"
 
 def get_aids(missing_values_strategy="mean"):
@@ -40,6 +41,7 @@ def get_aids(missing_values_strategy="mean"):
     df = handle_missing_values(df, missing_values_strategy)
     df = pd.get_dummies(df, drop_first=True)
     df = df.drop(["txgrp_3","txgrp_4"], axis = 1)
+    df["censor"] = np.logical_not(df["censor"])
     return df, "censor", "time"
 
 def get_gbsg2(missing_values_strategy="mean"):
@@ -61,7 +63,6 @@ def get_veterans_lugn_cancer(missing_values_strategy="mean"):
     df = df.join(pd.DataFrame(y))
     df = handle_missing_values(df, missing_values_strategy)
     df = pd.get_dummies(df, drop_first=True)
-    df["Status"] = np.logical_not(df["Status"])
     return df, "Status", "Survival_in_days"
 
 def handle_missing_values(df, strategy="mean"):
@@ -90,7 +91,6 @@ def create_mask(times, events):
     mask = torch.zeros(times.shape)
     for i in range(times.shape[0]):
         if events[i] == 0:
-            
             mask[i, times[i].tolist().index(1) + 1 : ] = 1
         else:
             mask[i, times[i].tolist().index(1)] = 1
