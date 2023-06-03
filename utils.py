@@ -20,6 +20,11 @@ def get_metabric(missing_values_strategy="mean"):
     df_clear = handle_missing_values(df, missing_values_strategy)
     df_clear = df_clear.drop(["Study ID", "Patient ID", "Sample ID","Overall Survival Status", "Patient's Vital Status", "Cancer Type", "Number of Samples Per Patient", "Sex", "Sample Type"
     , "Cancer Type Detailed", "Tumor Other Histologic Subtype", "Oncotree Code", "Relapse Free Status", "Relapse Free Status (Months)", "TMB (nonsynonymous)", "Mutation Count", "Neoplasm Histologic Grade"], axis = 1)
+    
+    values = df_clear["Integrative Cluster"].values
+    new_values = ["6" if x == "6" else "other" for x in values]
+    df_clear["Integrative Cluster"] = new_values
+
     df_clear["HER2 status measured by SNP6"] = df_clear["HER2 status measured by SNP6"].replace("UNDEF", "AUNDEF")
     df_clear["Pam50 + Claudin-low subtype"] = df_clear["Pam50 + Claudin-low subtype"].replace("NC", "ANC")
     df_clear = pd.get_dummies(df_clear, drop_first=True)
