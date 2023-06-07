@@ -12,7 +12,7 @@ from pycox.evaluation import EvalSurv
 from datasets import *
 
 class SurvModelBase(nn.Module):
-    def __init__(self, data, events_col, time_col, batch_size=64, layers=[90, 64, 32], dropout=0.2, residual=False):
+    def __init__(self, data, events_col, time_col, batch_size=64, layers=[90, 64, 32], dropout=0.2, residual=False, activation = "gelu"):
         super(SurvModelBase, self).__init__()
 
         residual = residual and len(layers) > 2
@@ -32,7 +32,7 @@ class SurvModelBase(nn.Module):
             out_features = layers[i]
             if residual and i != 0 and i%2 == 0:
                 in_features += layers[i - 2]
-            self.layers.append(self.create_block(in_features, out_features, dropout))
+            self.layers.append(self.create_block(in_features, out_features, dropout, activation))
 
     def forward(self, x):
         for i, layer in enumerate(self.layers):
@@ -43,12 +43,24 @@ class SurvModelBase(nn.Module):
                 residual = x
         return x
 
-    def create_block(self, in_features, out_features, dropout=0.2):
+    def create_block(self, in_features, out_features, dropout=0.2, activation = "gelu"):
+        if activation == "gelu":
+            activation_block = nn.GELU()
+        elif activation == "relu":
+            activation_block = nn.ReLU()
+        elif activation == "leaky_relu":
+            activation_block = nn.LeakyReLU()
+        elif activation == "selu":
+            activation_block = nn.SELU()
+        elif activation == "elu":
+            activation_block = nn.ELU()
+        else:
+            activation_block = nn.ReLU()
         return nn.Sequential(
             nn.Linear(in_features, out_features),
             nn.Dropout(dropout),
             nn.BatchNorm1d(out_features),
-            nn.ReLU()
+            activation_block
         )
 
     def prepare_data(self, data, events_col, time_col):
@@ -110,8 +122,8 @@ class SurvModelBase(nn.Module):
         return history
 
 class SurvModel(SurvModelBase):
-    def __init__(self, data, events_col, time_col, batch_size=64, layers=[90, 64, 32], dropout=0.2, residual=False):
-        super(SurvModel, self).__init__(data, events_col, time_col, batch_size, layers, dropout, residual)
+    def __init__(self, data, events_col, time_col, batch_size=64, layers=[90, 64, 32], dropout=0.2, residual=False, activation = "gelu"):
+        super(SurvModel, self).__init__(data, events_col, time_col, batch_size, layers, dropout, residual, activation)
         if self.residual and len(layers) % 2 == 0:
             self.layers.append(nn.Linear(layers[-1] + layers[-3], 1))
         else:
@@ -164,11 +176,11 @@ class SurvModel(SurvModelBase):
 
 class DeepHitModel(SurvModelBase):
     
-    def __init__(self, data, events_col, time_col, time_bins, batch_size=64, interpolation_steps = 10, layers=[90, 64, 32], dropout=0.2, residual=False):
+    def __init__(self, data, events_col, time_col, time_bins, batch_size=64, interpolation_steps = 10, layers=[90, 64, 32], dropout=0.2, residual=False, activation = "gelu"):
         self.time_bins = time_bins
         self.interpolation_steps = interpolation_steps
 
-        super(DeepHitModel, self).__init__(data, events_col, time_col, batch_size, layers, dropout, residual)
+        super(DeepHitModel, self).__init__(data, events_col, time_col, batch_size, layers, dropout, residual, activation)
         
         if self.residual and len(layers) % 2 == 0:
             final_layer = nn.Linear(layers[-1] + layers[-3], time_bins)
