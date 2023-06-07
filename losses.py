@@ -1,6 +1,6 @@
 import torch 
 
-def negative_likelihood_loss(y_pred, events):
+def negative_likelihood_loss(y_pred, events, eps=1e-8):
     y_pred = y_pred.squeeze()
     hazard_ratio = torch.exp(y_pred)
     risk = torch.cumsum(hazard_ratio, dim=0)
@@ -8,7 +8,7 @@ def negative_likelihood_loss(y_pred, events):
     uncensored_likelihood = y_pred - log_risk
     censored_likelihood = uncensored_likelihood * events
     cum_loss = -torch.sum(censored_likelihood)
-    total_events = torch.sum(events)
+    total_events = torch.sum(events) + eps
     return cum_loss / total_events
 
 
