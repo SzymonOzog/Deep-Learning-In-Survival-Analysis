@@ -14,9 +14,55 @@ def get_unprocessed_metabric():
     df = pd.read_csv("G:/DL/Deep-Learning-In-Survival-Analysis/brca_metabric/brca_metabric_clinical_data.tsv", sep="\t")
     return df, None, "Overall Survival (Months)"
 
-def get_metabric(missing_values_strategy="mean"):
+def get_metabric(missing_values_strategy="mean", gene_data=False):
     df = get_unprocessed_metabric()[0]
     df["Event"] = df["Patient's Vital Status"] != "Living"
+    
+    if gene_data:
+        picked_genes = ['DOCK10',
+                        'SGIP1',
+                        'AMH',
+                        'PLEC',
+                        'STRN4',
+                        'POLR2C',
+                        'LYG1',
+                        'EFS',
+                        'KLHL8',
+                        'SLC25A1',
+                        'SLC6A6',
+                        'LOC442028',
+                        'IDNK',
+                        'ZCCHC7',
+                        'ZBTB44',
+                        'SFXN2',
+                        'IZUMO4',
+                        'BCORL1',
+                        'EHD3',
+                        'COQ9',
+                        'MIS18BP1',
+                        'C21orf99',
+                        'TENT5C',
+                        'ADGRG1',
+                        'CD226',
+                        'ACTN1',
+                        'NAT14',
+                        'UBE2D4',
+                        'SCML1',
+                        'HIST1H4J',
+                        'CD47',
+                        'PREX1',
+                        'GTF3C5',
+                        'BET1',
+                        'DDX41',
+                        'VN1R10P',
+                        'WEE2-AS1',
+                        'ENC1',
+                        'VANGL1']
+        gene_df = pd.read_csv("brca_metabric/data_mrna_illumina_microarray_zscores_ref_diploid_samples.txt", sep="\t")
+        gene_df = gene_df.set_index('Hugo_Symbol').transpose()
+        gene_df = gene_df.iloc[1:]
+        df = df.merge(gene_df[picked_genes], left_on='Patient ID', right_index=True)
+    
     df_clear = handle_missing_values(df, missing_values_strategy)
     df_clear = df_clear.drop(["Study ID", "Patient ID", "Sample ID","Overall Survival Status", "Patient's Vital Status", "Cancer Type", "Number of Samples Per Patient", "Sex", "Sample Type"
     , "Cancer Type Detailed", "Tumor Other Histologic Subtype", "Oncotree Code", "Relapse Free Status", "Relapse Free Status (Months)", "TMB (nonsynonymous)", "Mutation Count", "Neoplasm Histologic Grade"], axis = 1)
