@@ -66,6 +66,9 @@ def get_metabric(missing_values_strategy="mean", gene_data=False):
     df_clear = pd.get_dummies(df_clear, drop_first=True)
     return df_clear, "Event", "Overall Survival (Months)"
 
+def get_metabric_gene(missing_values_strategy="mean"):
+    return get_metabric(missing_values_strategy, True)
+
 def get_flchain(missing_values_strategy="mean"):
     df, y = sksurv.datasets.load_flchain()
     df = df.join(pd.DataFrame(y))
